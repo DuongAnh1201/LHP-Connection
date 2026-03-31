@@ -16,6 +16,8 @@ interface FormState {
   city: string
   caption: string
   job_field: string
+  linkedin_url: string
+  facebook_url: string
 }
 
 async function geocodeCity(city: string) {
@@ -38,7 +40,7 @@ export default function MyProfile({ onUpdated, onNavigateJoin }: MyProfileProps)
   const [post, setPost] = useState<Post | null>(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
-  const [form, setForm] = useState<FormState>({ name: '', class: '', school_year: '', city: '', caption: '', job_field: '' })
+  const [form, setForm] = useState<FormState>({ name: '', class: '', school_year: '', city: '', caption: '', job_field: '', linkedin_url: '', facebook_url: '' })
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -76,6 +78,8 @@ export default function MyProfile({ onUpdated, onNavigateJoin }: MyProfileProps)
           city: data.city,
           caption: data.caption,
           job_field: data.job_field ?? '',
+          linkedin_url: data.linkedin_url ?? '',
+          facebook_url: data.facebook_url ?? '',
         })
         if (data.image_url) setImagePreview(getOptimizedImageUrl(data.image_url, 720))
       }
@@ -120,6 +124,8 @@ export default function MyProfile({ onUpdated, onNavigateJoin }: MyProfileProps)
           country: geo?.country || post.country,
           caption: form.caption,
           job_field: form.job_field.trim() || null,
+          linkedin_url: form.linkedin_url.trim() || null,
+          facebook_url: form.facebook_url.trim() || null,
           image_url,
           lat: geo?.lat ?? post.lat,
           lng: geo?.lng ?? post.lng,
@@ -416,6 +422,21 @@ export default function MyProfile({ onUpdated, onNavigateJoin }: MyProfileProps)
                   Lĩnh vực công việc
                 </label>
                 <input type="text" name="job_field" value={form.job_field} onChange={onChange} placeholder="Kỹ sư phần mềm, Bác sĩ, Sinh viên..." className={inputClass} />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-[12px] font-medium uppercase tracking-[0.18em] text-text-faint">
+                    LinkedIn
+                  </label>
+                  <input type="url" name="linkedin_url" value={form.linkedin_url} onChange={onChange} placeholder="https://linkedin.com/in/..." className={inputClass} autoComplete="url" />
+                </div>
+                <div>
+                  <label className="mb-2 block text-[12px] font-medium uppercase tracking-[0.18em] text-text-faint">
+                    Facebook
+                  </label>
+                  <input type="url" name="facebook_url" value={form.facebook_url} onChange={onChange} placeholder="https://facebook.com/..." className={inputClass} autoComplete="url" />
+                </div>
               </div>
 
               <div>
