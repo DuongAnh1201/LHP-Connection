@@ -21,27 +21,31 @@ const AuthContext = createContext<AuthState>({
   clearAuthMessage: () => {},
 })
 
+function getInitialAuthMessage() {
+  if (typeof window === 'undefined') return null
+
+  const params = new URLSearchParams(window.location.search)
+  const errDesc = params.get('error_description')
+  const err = params.get('error')
+  if (!errDesc && !err) return null
+
+  const raw = errDesc || err || 'Đăng nhập thất bại.'
+  try {
+    return decodeURIComponent(raw.replace(/\+/g, ' '))
+  } catch {
+    return raw
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [authMessage, setAuthMessage] = useState<string | null>(null)
+  const [loading, setLoading] = useState(isConfigured)
+  const [authMessage, setAuthMessage] = useState<string | null>(() => getInitialAuthMessage())
 
   useEffect(() => {
-    if (!isConfigured) {
-      setLoading(false)
-      return
-    }
+    if (!isConfigured) return
 
-    const params = new URLSearchParams(window.location.search)
-    const errDesc = params.get('error_description')
-    const err = params.get('error')
-    if (errDesc || err) {
-      const raw = errDesc || err || 'Đăng nhập thất bại.'
-      try {
-        setAuthMessage(decodeURIComponent(raw.replace(/\+/g, ' ')))
-      } catch {
-        setAuthMessage(raw)
-      }
+    if (authMessage) {
       window.history.replaceState({}, '', `${window.location.pathname}${window.location.hash}`)
     }
 
@@ -55,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [authMessage])
 
   const signInWithGoogle = useCallback(async () => {
     setAuthMessage(null)
@@ -81,6 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   return useContext(AuthContext)
 }

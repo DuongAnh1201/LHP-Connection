@@ -1,25 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --color-base: #0b1120;
-  --color-surface: #151d2e;
-  --color-card: #1c2a3f;
-  --color-input: #111827;
-  --color-border: #1f2e47;
-  --color-border-light: #2d3f5a;
-  --color-border-hover: #3d5272;
-  --color-text: #f1f5f9;
-  --color-text-dim: #94a3b8;
-  --color-text-faint: #64748b;
-  --color-red: #f87171;
-  --color-red-hover: #ef4444;
-  --color-pill: #1f2e47;
-  --color-pill-border: #2d3f5a;
+  --font-sans: "Inter", "Segoe UI", sans-serif;
+  --font-serif: "Inter", "Segoe UI", sans-serif;
+
+  --color-base: #0F0F23;
+  --color-base-raised: #14142B;
+  --color-panel: #1E1B4B;
+  --color-panel-strong: #312E81;
+  --color-panel-muted: #17153b;
+  --color-input: #18163A;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(255, 255, 255, 0.18);
+  --color-text: #F8FAFC;
+  --color-text-dim: #CBD5E1;
+  --color-text-faint: #64748B;
+  --color-text-soft: #94A3B8;
+  --color-accent: #ea580c;
+  --color-accent-strong: #F97316;
+  --color-brand: #F97316;
+  --color-brand-hover: #FB923C;
+  --color-danger: #EF4444;
 }
 
 * {
-  margin: 0;
-  padding: 0;
   box-sizing: border-box;
 }
 
@@ -28,13 +33,54 @@ html {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
-  background-color: #0b1120;
-  color: #f1f5f9;
   min-height: 100vh;
+  overflow-x: hidden;
+  background-color: var(--color-base);
+  background-image: radial-gradient(circle at top right, rgba(49, 46, 129, 0.25), transparent 40%),
+    radial-gradient(circle at bottom left, rgba(249, 115, 22, 0.06), transparent 30%);
+  color: var(--color-text);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(139, 149, 173, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139, 149, 173, 0.05) 1px, transparent 1px);
+  background-size: 120px 120px;
+  mask-image: radial-gradient(circle at center, black 35%, transparent 88%);
+  pointer-events: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+a {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid rgba(244, 209, 137, 0.88);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: rgba(231, 91, 98, 0.32);
+  color: #fffaf1;
 }
 
 ::-webkit-scrollbar {
@@ -46,24 +92,34 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2d3f5a;
-  border-radius: 3px;
+  background: #2a3141;
+  border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3d5272;
+  background: #394356;
 }
 
 select option {
-  background-color: #1a2438;
-  color: #f1f5f9;
+  background-color: #141927;
+  color: #f6f7fb;
 }
 
-select.filter-pill {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  text-align: center;
-  text-align-last: center;
-  background-image: none;
+input::placeholder,
+textarea::placeholder {
+  color: rgba(176, 184, 203, 0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

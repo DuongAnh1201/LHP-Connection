@@ -7,45 +7,68 @@ interface PaginationProps {
 export default function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
   if (totalPages <= 1) return null
 
-  const pages: (number | '...')[] = []
-  pages.push(1)
+  const pages: Array<number | '...'> = [1]
   if (currentPage > 3) pages.push('...')
-  for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) pages.push(i)
+  for (let value = Math.max(2, currentPage - 1); value <= Math.min(totalPages - 1, currentPage + 1); value += 1) {
+    pages.push(value)
+  }
   if (currentPage < totalPages - 2) pages.push('...')
   if (totalPages > 1) pages.push(totalPages)
 
-  const btn = 'w-9 h-9 flex items-center justify-center rounded-lg text-[13px] font-medium transition-all duration-200 cursor-pointer'
+  const buttonClass =
+    'flex h-11 min-w-11 items-center justify-center rounded-full border px-4 text-[13px] font-medium transition-all duration-200'
 
   return (
-    <div className="flex items-center justify-center gap-1.5 py-8">
+    <div className="flex flex-col items-center gap-4 py-10">
+      <p className="text-[12px] uppercase tracking-[0.18em] text-text-faint">
+        Trang {currentPage} / {totalPages}
+      </p>
+
+      <div className="flex flex-wrap items-center justify-center gap-2">
       <button
+        type="button"
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className={`${btn} border border-border text-text-faint hover:border-border-hover hover:text-text disabled:opacity-25 disabled:cursor-not-allowed`}
-        aria-label="Previous page"
-      >‹</button>
+        className={`${buttonClass} border-border/80 bg-panel text-text-faint hover:border-border-strong hover:text-text disabled:cursor-not-allowed disabled:opacity-30`}
+        aria-label="Trang trước"
+      >
+        Trước
+      </button>
 
-      {pages.map((p, i) =>
-        p === '...' ? (
-          <span key={`d${i}`} className="w-9 h-9 flex items-center justify-center text-text-faint text-[13px]">…</span>
+      {pages.map((page, index) =>
+        page === '...' ? (
+          <span
+            key={`ellipsis-${index}`}
+            className="flex h-11 min-w-11 items-center justify-center px-2 text-[12px] text-text-faint"
+          >
+            …
+          </span>
         ) : (
           <button
-            key={p}
-            onClick={() => onPageChange(p)}
-            className={`${btn} ${p === currentPage
-              ? 'bg-red text-white'
-              : 'border border-border text-text-dim hover:border-border-hover hover:text-text'
+            key={page}
+            type="button"
+            onClick={() => onPageChange(page)}
+            className={`${buttonClass} ${
+              page === currentPage
+                ? 'border-accent bg-accent/10 text-accent-strong shadow-[0_14px_30px_rgba(212,168,74,0.12)]'
+                : 'border-border/80 bg-panel text-text-dim hover:border-border-strong hover:text-text'
             }`}
-          >{p}</button>
+          >
+            {page}
+          </button>
         )
       )}
 
       <button
+        type="button"
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className={`${btn} border border-border text-text-faint hover:border-border-hover hover:text-text disabled:opacity-25 disabled:cursor-not-allowed`}
-        aria-label="Next page"
-      >›</button>
+        className={`${buttonClass} border-border/80 bg-panel text-text-faint hover:border-border-strong hover:text-text disabled:cursor-not-allowed disabled:opacity-30`}
+        aria-label="Trang sau"
+      >
+        Sau
+      </button>
+      </div>
     </div>
   )
 }

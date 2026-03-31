@@ -20,6 +20,7 @@ function AppInner() {
       setLoading(false)
       return
     }
+
     setLoading(true)
     try {
       const { data, error } = await supabase
@@ -29,19 +30,24 @@ function AppInner() {
         .order('created_at', { ascending: false })
       if (!error && data) setPosts(data as Post[])
     } catch {
-      // network error
+      // Network errors surface through loading state only for now.
     }
     setLoading(false)
   }, [])
 
-  useEffect(() => { fetchPosts() }, [fetchPosts])
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      void fetchPosts()
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [fetchPosts])
 
   const handlePostClick = (post: Post) => setModalPost(post)
 
-  const handleModalEdit = (post: Post) => {
+  const handleModalEdit = () => {
     setModalPost(null)
     setView('profile')
-    void post
   }
 
   const handleModalDeleted = () => {
@@ -50,28 +56,35 @@ function AppInner() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-base">
+    <div className="min-h-screen bg-base text-text">
       <Header currentView={view} onViewChange={setView} />
 
       {!isConfigured && (
-        <div className="max-w-[760px] mx-auto mt-4 px-5 w-full">
-          <div className="bg-amber-950/30 border border-amber-800/30 text-amber-200/80 px-4 py-3 rounded-xl text-[13px] leading-relaxed">
+        <div className="mx-auto max-w-7xl px-6 pt-4">
+          <div className="rounded-2xl border border-amber-700/25 bg-amber-950/20 px-4 py-3 text-[13px] leading-6 text-amber-100/85">
             <strong>Chưa cấu hình Supabase.</strong>{' '}
-            Thêm <code className="bg-amber-900/30 px-1.5 py-0.5 rounded text-[12px]">VITE_SUPABASE_ANON_KEY</code> vào file{' '}
-            <code className="bg-amber-900/30 px-1.5 py-0.5 rounded text-[12px]">.env</code>
+            Thêm <code className="rounded bg-amber-900/25 px-1.5 py-0.5 text-[12px]">VITE_SUPABASE_ANON_KEY</code> vào{' '}
+            <code className="rounded bg-amber-900/25 px-1.5 py-0.5 text-[12px]">.env</code> để tải dữ liệu thật.
           </div>
         </div>
       )}
 
-      <main className="flex-1 w-full min-w-0">
+      <main className="pb-10 sm:pb-14">
         {view === 'list' ? (
           <ListView posts={posts} loading={loading} onPostClick={handlePostClick} />
         ) : view === 'join' ? (
-          <JoinForm onSubmitted={() => { fetchPosts(); setView('list') }} />
+          <JoinForm
+            onSubmitted={() => {
+              fetchPosts()
+              setView('list')
+            }}
+          />
         ) : (
           <MyProfile onUpdated={fetchPosts} onNavigateJoin={() => setView('join')} />
         )}
       </main>
+
+      <Footer />
 
       {modalPost && (
         <ProfileModal
@@ -81,8 +94,6 @@ function AppInner() {
           onEdit={handleModalEdit}
         />
       )}
-
-      <Footer />
     </div>
   )
 }
