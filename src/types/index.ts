@@ -14,6 +14,7 @@ export interface Post {
   lat: number | null
   lng: number | null
   user_id: string | null
+  job_field: string | null
   is_active: boolean
   created_at: string
 }

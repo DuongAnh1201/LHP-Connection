@@ -14,6 +14,7 @@ interface FormState {
   school_year: string
   city: string
   caption: string
+  job_field: string
   linkedin_url: string
   facebook_url: string
 }
@@ -55,6 +56,7 @@ export default function JoinForm({ onSubmitted, onNavigateProfile }: JoinFormPro
     school_year: '',
     city: '',
     caption: '',
+    job_field: '',
     linkedin_url: '',
     facebook_url: '',
   })
@@ -111,6 +113,7 @@ export default function JoinForm({ onSubmitted, onNavigateProfile }: JoinFormPro
         country: geo?.country || '',
         caption: form.caption,
         image_url,
+        job_field: emptyToNull(form.job_field),
         linkedin_url: emptyToNull(form.linkedin_url),
         facebook_url: emptyToNull(form.facebook_url),
         lat: geo?.lat || null,
@@ -128,6 +131,7 @@ export default function JoinForm({ onSubmitted, onNavigateProfile }: JoinFormPro
         school_year: '',
         city: '',
         caption: '',
+        job_field: '',
         linkedin_url: '',
         facebook_url: '',
       })
@@ -319,6 +323,13 @@ export default function JoinForm({ onSubmitted, onNavigateProfile }: JoinFormPro
                   Địa điểm hiện tại *
                 </label>
                 <input type="text" name="city" value={form.city} onChange={onChange} placeholder="Nhập tên thành phố..." className={inputClass} />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-[12px] font-medium uppercase tracking-[0.18em] text-text-faint">
+                  Lĩnh vực công việc
+                </label>
+                <input type="text" name="job_field" value={form.job_field} onChange={onChange} placeholder="Kỹ sư phần mềm, Bác sĩ, Sinh viên..." className={inputClass} />
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">

@@ -39,6 +39,12 @@ export default function AlumniCard({ post, onClick, selected = false }: AlumniCa
           {post.name}
         </h3>
 
+        {post.job_field && (
+          <span className="mt-1.5 inline-block rounded-full bg-yellow-400/10 px-2.5 py-0.5 text-[11px] font-semibold text-yellow-400">
+            {post.job_field}
+          </span>
+        )}
+
         <p className="mt-2 line-clamp-3 min-h-18 text-[14px] leading-6 text-text-soft">
           {post.caption || 'Hồ sơ đang được cập nhật để bổ sung câu chuyện và trải nghiệm.'}
         </p>

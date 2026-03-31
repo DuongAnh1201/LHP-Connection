@@ -93,7 +93,8 @@ export default function ProfileModal({ post, onClose, onDeleted, onEdit }: Profi
             </div>
           </div>
 
-          {location && <p className="mt-4 text-sm text-text-faint">{location}</p>}
+          {post.job_field && <p className="mt-3 text-sm font-medium text-text-dim">{post.job_field}</p>}
+          {location && <p className="mt-2 text-sm text-text-faint">{location}</p>}
 
           {post.email && (
             <a

@@ -15,6 +15,7 @@ interface FormState {
   school_year: string
   city: string
   caption: string
+  job_field: string
 }
 
 async function geocodeCity(city: string) {
@@ -37,7 +38,7 @@ export default function MyProfile({ onUpdated, onNavigateJoin }: MyProfileProps)
   const [post, setPost] = useState<Post | null>(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
-  const [form, setForm] = useState<FormState>({ name: '', class: '', school_year: '', city: '', caption: '' })
+  const [form, setForm] = useState<FormState>({ name: '', class: '', school_year: '', city: '', caption: '', job_field: '' })
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -74,6 +75,7 @@ export default function MyProfile({ onUpdated, onNavigateJoin }: MyProfileProps)
           school_year: data.school_year,
           city: data.city,
           caption: data.caption,
+          job_field: data.job_field ?? '',
         })
         if (data.image_url) setImagePreview(getOptimizedImageUrl(data.image_url, 720))
       }
@@ -117,6 +119,7 @@ export default function MyProfile({ onUpdated, onNavigateJoin }: MyProfileProps)
           city: geo ? form.city.split(',')[0]?.trim() : form.city,
           country: geo?.country || post.country,
           caption: form.caption,
+          job_field: form.job_field.trim() || null,
           image_url,
           lat: geo?.lat ?? post.lat,
           lng: geo?.lng ?? post.lng,
@@ -287,7 +290,8 @@ export default function MyProfile({ onUpdated, onNavigateJoin }: MyProfileProps)
                 </div>
               </div>
 
-              {location && <p className="mt-4 text-sm text-text-faint">{location}</p>}
+              {post.job_field && <p className="mt-3 text-sm font-medium text-text-dim">{post.job_field}</p>}
+              {location && <p className="mt-2 text-sm text-text-faint">{location}</p>}
 
               {(post.email || user.email) && (
                 <a
@@ -405,6 +409,13 @@ export default function MyProfile({ onUpdated, onNavigateJoin }: MyProfileProps)
                   Địa điểm hiện tại *
                 </label>
                 <input type="text" name="city" value={form.city} onChange={onChange} placeholder="Nhập tên thành phố..." className={inputClass} />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-[12px] font-medium uppercase tracking-[0.18em] text-text-faint">
+                  Lĩnh vực công việc
+                </label>
+                <input type="text" name="job_field" value={form.job_field} onChange={onChange} placeholder="Kỹ sư phần mềm, Bác sĩ, Sinh viên..." className={inputClass} />
               </div>
 
               <div>

@@ -25,7 +25,7 @@ function AppInner() {
     try {
       const { data, error } = await supabase
         .from('posts')
-        .select('id,name,class,school_year,city,country,caption,linkedin_url,facebook_url,email,image_url,lat,lng,user_id,is_active,created_at')
+        .select('id,name,class,school_year,city,country,caption,job_field,linkedin_url,facebook_url,email,image_url,lat,lng,user_id,is_active,created_at')
         .eq('is_active', true)
         .order('created_at', { ascending: false })
       if (!error && data) setPosts(data as Post[])
