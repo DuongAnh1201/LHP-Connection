@@ -26,7 +26,9 @@ async function geocodeCity(city: string) {
     if (data.length > 0) {
       return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), country: data[0].address?.country || '' }
     }
-  } catch { /* silent */ }
+  } catch {
+    // Silent fallback keeps manual text entry usable.
+  }
   return null
 }
 
@@ -43,8 +45,17 @@ export default function MyProfile({ onUpdated, onNavigateJoin }: MyProfileProps)
   const [error, setError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
+  const shellClass = 'mx-auto max-w-[1240px] px-4 py-8 sm:px-6 sm:py-10 lg:px-8'
+  const inputClass =
+    'h-12 w-full rounded-xl border border-border bg-input px-4 text-[14px] text-text outline-none transition-all placeholder:text-text-faint/80 focus:border-accent/50'
+  const textareaClass = `${inputClass} h-auto min-h-[140px] py-3 resize-y`
+
   useEffect(() => {
-    if (!user) { setLoading(false); return }
+    if (!user) {
+      setLoading(false)
+      return
+    }
+
     ;(async () => {
       const { data } = await supabase
         .from('posts')
@@ -54,51 +65,66 @@ export default function MyProfile({ onUpdated, onNavigateJoin }: MyProfileProps)
         .order('created_at', { ascending: false })
         .limit(1)
         .single()
+
       if (data) {
         setPost(data as Post)
         setForm({
-          name: data.name, class: data.class, school_year: data.school_year,
-          city: data.city, caption: data.caption,
+          name: data.name,
+          class: data.class,
+          school_year: data.school_year,
+          city: data.city,
+          caption: data.caption,
         })
-        if (data.image_url) setImagePreview(getOptimizedImageUrl(data.image_url, 600))
+        if (data.image_url) setImagePreview(getOptimizedImageUrl(data.image_url, 720))
       }
       setLoading(false)
     })()
   }, [user])
 
-  const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }))
+  const onChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setForm((value) => ({ ...value, [event.target.name]: event.target.value }))
 
-  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+  const onFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
     if (!file) return
     setImageFile(file)
-    const r = new FileReader()
-    r.onload = () => setImagePreview(r.result as string)
-    r.readAsDataURL(file)
+    const reader = new FileReader()
+    reader.onload = () => setImagePreview(reader.result as string)
+    reader.readAsDataURL(file)
   }
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSave = async (event: React.FormEvent) => {
+    event.preventDefault()
     if (!post || !user) return
     setError(null)
     setSubmitting(true)
+
     try {
-      if (!form.name || !form.class || !form.school_year || !form.city || !form.caption)
+      if (!form.name || !form.class || !form.school_year || !form.city || !form.caption) {
         throw new Error('Vui lòng điền đầy đủ thông tin bắt buộc.')
+      }
 
       let image_url = post.image_url
       if (imageFile) image_url = await uploadImage(imageFile)
       const geo = await geocodeCity(form.city)
 
-      const { error: dbErr } = await supabase.from('posts').update({
-        name: form.name, class: form.class, school_year: form.school_year,
-        city: geo ? form.city.split(',')[0]?.trim() : form.city,
-        country: geo?.country || post.country, caption: form.caption,
-        image_url, lat: geo?.lat ?? post.lat, lng: geo?.lng ?? post.lng,
-        email: user.email ?? null,
-      }).eq('id', post.id)
-      if (dbErr) throw dbErr
+      const { error: dbError } = await supabase
+        .from('posts')
+        .update({
+          name: form.name,
+          class: form.class,
+          school_year: form.school_year,
+          city: geo ? form.city.split(',')[0]?.trim() : form.city,
+          country: geo?.country || post.country,
+          caption: form.caption,
+          image_url,
+          lat: geo?.lat ?? post.lat,
+          lng: geo?.lng ?? post.lng,
+          email: user.email ?? null,
+        })
+        .eq('id', post.id)
+
+      if (dbError) throw dbError
 
       setEditing(false)
       setImageFile(null)
@@ -107,7 +133,7 @@ export default function MyProfile({ onUpdated, onNavigateJoin }: MyProfileProps)
       const { data: refreshed } = await supabase.from('posts').select('*').eq('id', post.id).single()
       if (refreshed) {
         setPost(refreshed as Post)
-        if (refreshed.image_url) setImagePreview(getOptimizedImageUrl(refreshed.image_url, 600))
+        if (refreshed.image_url) setImagePreview(getOptimizedImageUrl(refreshed.image_url, 720))
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Đã xảy ra lỗi.')
@@ -133,234 +159,319 @@ export default function MyProfile({ onUpdated, onNavigateJoin }: MyProfileProps)
     }
   }
 
-  const inp =
-    'w-full bg-input border border-border rounded-xl px-3.5 py-2.5 text-[14px] text-text ' +
-    'placeholder-text-faint focus:outline-none focus:ring-2 focus:ring-red/30 focus:border-red/50 transition-all duration-200'
-
   if (!user) {
     return (
-      <div className="max-w-[560px] mx-auto px-5 py-16 text-center">
-        <div className="bg-card rounded-2xl p-10 border border-border">
-          <div className="text-4xl mb-4">🔒</div>
-          <h2 className="text-xl font-bold text-text mb-2">Đăng nhập để xem hồ sơ</h2>
-          <p className="text-text-dim text-sm mb-6">Bạn cần đăng nhập bằng Google để xem và quản lý hồ sơ.</p>
-          <button
-            onClick={signInWithGoogle}
-            className="px-6 py-2.5 bg-white text-gray-800 rounded-full text-sm font-medium hover:bg-gray-100 transition-colors cursor-pointer inline-flex items-center gap-2"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-            </svg>
-            Đăng nhập bằng Google
-          </button>
+      <section className={shellClass}>
+        <div className="mx-auto max-w-[1100px] overflow-hidden rounded-[28px] border border-border bg-panel">
+          <div className="grid items-center gap-6 p-6 sm:p-8 lg:grid-cols-[0.95fr,1.05fr]">
+            <div className="rounded-[24px] border border-accent/20 bg-[radial-gradient(circle_at_top,_rgba(226,174,82,0.18),_transparent_42%),linear-gradient(180deg,_rgba(20,25,39,0.96),_rgba(13,17,27,1))] p-6 text-center">
+              <p className="text-[11px] uppercase tracking-[0.28em] text-accent-strong/85">Hồ sơ của tôi</p>
+              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white">Quản lý hồ sơ alumni bằng tài khoản của bạn.</h2>
+              <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-text-dim">
+                Đăng nhập để xem bài viết đã gửi, chỉnh sửa thông tin, hoặc xoá hồ sơ khỏi danh sách nếu cần.
+              </p>
+            </div>
+
+            <div className="flex flex-col items-center rounded-[24px] border border-border bg-base-raised p-6 text-center sm:p-7">
+              <h3 className="text-[24px] font-semibold tracking-tight text-white">Đăng nhập để xem hồ sơ</h3>
+              <p className="mt-3 text-sm leading-6 text-text-dim">
+                Bạn cần đăng nhập bằng đúng tài khoản Google đã dùng khi gửi bài viết để truy cập phần quản lý hồ sơ.
+              </p>
+              <button
+                type="button"
+                onClick={signInWithGoogle}
+                className="mt-6 inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white px-5 py-3 text-sm font-medium text-slate-900 transition-colors hover:bg-slate-100"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden>
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                </svg>
+                Đăng nhập bằng Google
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
     )
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-32">
-        <span className="text-text-faint animate-pulse text-sm">Đang tải...</span>
+      <div className="mx-auto flex max-w-[1240px] items-center justify-center px-4 py-32 sm:px-6 lg:px-8">
+        <span className="text-sm text-text-faint animate-pulse">Đang tải hồ sơ...</span>
       </div>
     )
   }
 
   if (!post) {
     return (
-      <div className="max-w-[560px] mx-auto px-5 py-16 text-center">
-        <div className="bg-card rounded-2xl p-10 border border-border">
-          <div className="text-4xl mb-4">👋</div>
-          <h2 className="text-xl font-bold text-text mb-2">Chưa có hồ sơ</h2>
-          <p className="text-text-dim text-sm mb-6">Bạn chưa tạo hồ sơ. Hãy tham gia mạng lưới ngay!</p>
-          <button
-            onClick={onNavigateJoin}
-            className="px-6 py-2.5 bg-red text-white rounded-full text-sm font-medium hover:bg-red-hover transition-colors cursor-pointer"
-          >
-            Tham gia mạng lưới
-          </button>
+      <section className={shellClass}>
+        <div className="mx-auto max-w-[1100px] overflow-hidden rounded-[28px] border border-border bg-panel">
+          <div className="grid items-center gap-6 p-6 sm:p-8 lg:grid-cols-[0.95fr,1.05fr]">
+            <div className="rounded-[24px] border border-accent/20 bg-[radial-gradient(circle_at_top,_rgba(226,174,82,0.18),_transparent_42%),linear-gradient(180deg,_rgba(20,25,39,0.96),_rgba(13,17,27,1))] p-6 text-center">
+              <p className="text-[11px] uppercase tracking-[0.28em] text-accent-strong/85">Hồ sơ của tôi</p>
+              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white">Bạn chưa có bài viết nào.</h2>
+              <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-text-dim">
+                Tạo một bài viết mới để tên, ảnh và địa điểm của bạn xuất hiện trong mạng lưới alumni cùng mọi người.
+              </p>
+            </div>
+
+            <div className="flex flex-col items-center rounded-[24px] border border-border bg-base-raised p-6 text-center sm:p-7">
+              <h3 className="text-[24px] font-semibold tracking-tight text-white">Bắt đầu từ trang tham gia</h3>
+              <p className="mt-3 text-sm leading-6 text-text-dim">
+                Bạn sẽ nhập cùng bộ dữ liệu hiện có: tên, lớp, niên khoá, địa điểm, lời nhắn, ảnh và các liên kết mạng xã hội.
+              </p>
+              <button
+                type="button"
+                onClick={onNavigateJoin}
+                className="mt-6 rounded-xl border border-brand bg-brand px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-brand-hover"
+              >
+                Tham gia mạng lưới
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
     )
   }
 
+  const location = [post.city, post.country].filter(Boolean).join(', ')
+  const wordCount = form.caption.trim().split(/\s+/).filter(Boolean).length
+
   if (!editing) {
-    const location = [post.city, post.country].filter(Boolean).join(', ')
     return (
-      <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <div className="bg-card rounded-2xl border border-border overflow-hidden">
-          {imagePreview && (
-            <div className="aspect-[3/2] overflow-hidden">
-              <img src={imagePreview} alt={post.name} className="w-full h-full object-cover" />
+      <section className={shellClass}>
+        <div className="mx-auto mb-6 max-w-[760px] text-center">
+          <p className="text-[11px] uppercase tracking-[0.28em] text-accent-strong/85">Hồ sơ của tôi</p>
+          <h2 className="mt-4 text-[30px] font-semibold tracking-tight text-white sm:text-[34px]">
+            Quản lý bài viết của riêng bạn trong mạng lưới alumni.
+          </h2>
+          <p className="mt-3 text-sm leading-6 text-text-dim">
+            Chỉnh sửa khi bạn chuyển thành phố, đổi ảnh, hoặc đơn giản chỉ muốn cập nhật một lời nhắn mới cho cộng đồng.
+          </p>
+        </div>
+
+        <div className="mx-auto max-w-[1100px] overflow-hidden rounded-[28px] border border-border bg-panel">
+          <div className="grid gap-0 md:grid-cols-[320px,1fr]">
+            <div className="border-b border-border md:border-b-0 md:border-r">
+              <div className="aspect-[0.95/1] h-full overflow-hidden bg-panel-muted">
+                {imagePreview ? (
+                  <img src={imagePreview} alt={post.name} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full min-h-[320px] items-center justify-center text-sm text-text-faint">
+                    Chưa có ảnh
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-          <div className="p-6">
-            <h2 className="text-xl font-bold text-text">{post.name}</h2>
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {post.class && (
-                <span className="inline-flex items-center px-2.5 py-1 text-[12px] font-medium bg-pill text-text-dim rounded-lg border border-pill-border">
-                  {post.class}
-                </span>
-              )}
-              {post.school_year && (
-                <span className="inline-flex items-center px-2.5 py-1 text-[12px] font-medium bg-pill text-text-dim rounded-lg border border-pill-border">
-                  {post.school_year}
-                </span>
-              )}
-            </div>
-            {location && (
-              <p className="text-[14px] text-text-faint mt-3 flex items-center gap-1.5">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                  <circle cx="12" cy="10" r="3" />
-                </svg>
-                {location}
-              </p>
-            )}
-            {(post.email || user.email) && (
-              <p className="text-[14px] text-text-faint mt-2 flex items-center gap-1.5 min-w-0">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                  <polyline points="22,6 12,13 2,6" />
-                </svg>
+
+            <div className="p-6 sm:p-7">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-text-faint">Bài viết hiện tại</p>
+                  <h3 className="mt-3 text-[28px] font-semibold tracking-tight text-white">{post.name}</h3>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {post.class && (
+                    <span className="rounded-md border border-accent/20 bg-accent/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-accent-strong">
+                      {post.class}
+                    </span>
+                  )}
+                  {post.school_year && (
+                    <span className="rounded-md border border-accent/20 bg-accent/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-accent-strong">
+                      {post.school_year}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {location && <p className="mt-4 text-sm text-text-faint">{location}</p>}
+
+              {(post.email || user.email) && (
                 <a
                   href={`mailto:${post.email || user.email}`}
-                  className="text-red/90 hover:text-red truncate underline-offset-2 hover:underline"
+                  className="mt-3 inline-flex text-sm text-accent-strong transition-colors hover:text-white"
                 >
                   {post.email || user.email}
                 </a>
-              </p>
-            )}
-            {post.caption && (
-              <p className="text-[15px] text-text-dim mt-4 leading-relaxed">{post.caption}</p>
-            )}
+              )}
 
-            <div className="flex gap-3 mt-6 pt-5 border-t border-border">
-              <button
-                onClick={() => setEditing(true)}
-                className="flex-1 py-2.5 bg-pill text-text-dim text-[14px] font-medium rounded-xl border border-pill-border hover:text-text hover:border-border-hover transition-all cursor-pointer"
-              >
-                Chỉnh sửa
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="flex-1 py-2.5 bg-rose-950/40 text-rose-300 text-[14px] font-medium rounded-xl border border-rose-900/50 hover:bg-rose-950/60 transition-all disabled:opacity-50 cursor-pointer"
-              >
-                {deleting ? 'Đang xoá...' : 'Xoá hồ sơ'}
-              </button>
+              {post.caption && (
+                <p className="mt-6 max-w-2xl text-[15px] leading-7 text-text-dim">
+                  {post.caption}
+                </p>
+              )}
+
+              <div className="mt-8 flex flex-wrap gap-3 border-t border-border pt-6">
+                <button
+                  type="button"
+                  onClick={() => setEditing(true)}
+                  className="rounded-xl border border-brand bg-brand px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-brand-hover"
+                >
+                  Chỉnh sửa hồ sơ
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="rounded-xl border border-rose-900/40 bg-rose-950/25 px-5 py-3 text-sm font-medium text-rose-200 transition-colors hover:bg-rose-950/40 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {deleting ? 'Đang xoá...' : 'Xoá hồ sơ'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
     )
   }
 
-  const wordCount = form.caption.trim().split(/\s+/).filter(Boolean).length
-
   return (
-    <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-      <div className="bg-card rounded-2xl p-5 sm:p-6 md:p-7 border border-border">
-        <div className="flex items-center justify-between mb-5 gap-3">
-          <div>
-            <h2 className="text-xl sm:text-[22px] font-bold text-text mb-0.5">Chỉnh sửa hồ sơ</h2>
-            <p className="text-[13px] sm:text-sm text-text-faint">Cập nhật thông tin của bạn.</p>
-          </div>
-          <button
-            onClick={() => setEditing(false)}
-            className="px-4 py-2 text-[13px] text-text-faint hover:text-text border border-border rounded-xl hover:border-border-hover transition-all cursor-pointer"
-          >
-            Huỷ
-          </button>
-        </div>
+    <section className={shellClass}>
+      <div className="mx-auto mb-6 max-w-[760px] text-center">
+        <p className="text-[11px] uppercase tracking-[0.28em] text-accent-strong/85">Hồ sơ của tôi</p>
+        <h2 className="mt-4 text-[30px] font-semibold tracking-tight text-white sm:text-[34px]">
+          Chỉnh sửa thông tin nhưng vẫn giữ nguyên cấu trúc dữ liệu hiện có.
+        </h2>
+        <p className="mt-3 text-sm leading-6 text-text-dim">
+          Mọi thay đổi vẫn cập nhật trực tiếp vào Supabase, chỉ có phần trình bày được làm lại để khớp với giao diện directory mới.
+        </p>
+      </div>
 
-        <form onSubmit={handleSave} className="space-y-4">
-          {user.email && (
-            <div className="rounded-xl border border-border bg-input/40 px-4 py-3">
-              <p className="text-[12px] font-medium text-text-dim mb-0.5">Email</p>
-              <a href={`mailto:${user.email}`} className="text-[14px] text-red/90 hover:text-red break-all">
-                {user.email}
-              </a>
-              <p className="text-[11px] text-text-faint mt-1">Từ tài khoản Google; được lưu cùng hồ sơ khi bạn nhấn Lưu.</p>
-            </div>
-          )}
-          <div>
-            <label className="block text-[13px] font-medium text-text-dim mb-1.5">
-              Tên <span className="text-red">*</span>
-            </label>
-            <input type="text" name="name" value={form.name} onChange={onChange}
-              placeholder="Nguyễn Văn A" className={inp} />
-          </div>
+      <div className="mx-auto max-w-[1100px] overflow-hidden rounded-[28px] border border-border bg-panel">
+        <div className="grid gap-6 p-5 sm:p-7 lg:grid-cols-[0.9fr,1.1fr]">
+          <div className="rounded-[24px] border border-accent/20 bg-[radial-gradient(circle_at_top,_rgba(226,174,82,0.18),_transparent_42%),linear-gradient(180deg,_rgba(20,25,39,0.96),_rgba(13,17,27,1))] p-5 text-center sm:p-6">
+            <p className="text-[11px] uppercase tracking-[0.28em] text-accent-strong/85">Thông tin đang dùng</p>
+            <h3 className="mt-4 text-[26px] font-semibold tracking-tight text-white">{post.name}</h3>
+            <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-text-dim">
+              Cập nhật ảnh, địa điểm hoặc lời nhắn mới. Dữ liệu email vẫn lấy từ tài khoản Google hiện tại của bạn khi nhấn lưu.
+            </p>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[13px] font-medium text-text-dim mb-1.5">
-                Lớp <span className="text-red">*</span>
-              </label>
-              <input type="text" name="class" value={form.class} onChange={onChange}
-                placeholder="CA1, CTR-N, CSU-Đ,..." className={inp} />
-            </div>
-            <div>
-              <label className="block text-[13px] font-medium text-text-dim mb-1.5">
-                Niên khoá <span className="text-red">*</span>
-              </label>
-              <input type="text" name="school_year" value={form.school_year} onChange={onChange}
-                placeholder="2020-2023" className={inp} />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-[13px] font-medium text-text-dim mb-1.5">
-              Địa điểm hiện tại <span className="text-red">*</span>
-            </label>
-            <input type="text" name="city" value={form.city} onChange={onChange}
-              placeholder="Nhập tên thành phố..." className={inp} />
-          </div>
-
-          <div>
-            <label className="block text-[13px] font-medium text-text-dim mb-1.5">
-              Một lời nhắn nho nhỏ <span className="text-red">*</span>
-            </label>
-            <textarea name="caption" value={form.caption} onChange={onChange}
-              placeholder="Dạo này bạn thế nào?" rows={4} className={`${inp} resize-y`} />
-            <p className="text-right text-[11px] text-text-faint mt-1">{wordCount} / 30 từ</p>
-          </div>
-
-          <div>
-            <label className="block text-[13px] font-medium text-text-dim mb-1.5">
-              Ảnh <span className="text-text-faint font-normal">(tuỳ chọn)</span>
-            </label>
-            <input ref={fileRef} type="file" accept="image/*" onChange={onFile} className="hidden" />
-            {imagePreview ? (
-              <div className="relative">
-                <img src={imagePreview} alt="Preview" className="w-full h-48 object-cover rounded-xl border border-border" />
-                <button type="button"
-                  onClick={() => { setImageFile(null); setImagePreview(null); if (fileRef.current) fileRef.current.value = '' }}
-                  className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center bg-base/80 backdrop-blur-sm rounded-full text-text-faint hover:text-text text-xs cursor-pointer">
-                  ✕
-                </button>
+            {user.email && (
+              <div className="mt-8 rounded-[20px] border border-border/70 bg-base-raised p-4 text-left">
+                <p className="text-[11px] uppercase tracking-[0.22em] text-text-faint">Email</p>
+                <a href={`mailto:${user.email}`} className="mt-2 inline-flex text-sm font-medium text-accent-strong hover:text-white">
+                  {user.email}
+                </a>
+                <p className="mt-2 text-[12px] leading-5 text-text-faint">
+                  Email này sẽ được lưu vào bài viết khi bạn nhấn lưu thay đổi.
+                </p>
               </div>
-            ) : (
-              <button type="button" onClick={() => fileRef.current?.click()}
-                className="w-full py-3 bg-input border border-border rounded-xl text-[14px] text-text-faint hover:border-border-hover hover:text-text-dim transition-all duration-200 cursor-pointer">
-                Chọn ảnh
-              </button>
             )}
           </div>
 
-          {error && (
-            <div className="bg-rose-950/40 border border-rose-900/50 text-rose-300 px-4 py-3 rounded-xl text-[13px]">{error}</div>
-          )}
+          <form onSubmit={handleSave} className="rounded-[24px] border border-border bg-base-raised p-5 sm:p-6">
+            <div className="grid gap-5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.22em] text-text-faint">Chỉnh sửa</p>
+                  <h3 className="mt-2 text-[24px] font-semibold tracking-tight text-white">Cập nhật hồ sơ</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditing(false)}
+                  className="rounded-xl border border-border px-4 py-2.5 text-sm text-text-soft transition-colors hover:border-border-strong hover:text-text"
+                >
+                  Huỷ
+                </button>
+              </div>
 
-          <button type="submit" disabled={submitting}
-            className="w-full sm:w-auto min-w-[180px] py-3 px-6 bg-red text-white text-[14px] font-semibold rounded-xl hover:bg-red-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
-            {submitting ? 'Đang lưu...' : 'Lưu thay đổi'}
-          </button>
-        </form>
+              <div>
+                <label className="mb-2 block text-[12px] font-medium uppercase tracking-[0.18em] text-text-faint">
+                  Tên *
+                </label>
+                <input type="text" name="name" value={form.name} onChange={onChange} placeholder="Nguyễn Văn A" className={inputClass} />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-[12px] font-medium uppercase tracking-[0.18em] text-text-faint">
+                    Lớp *
+                  </label>
+                  <input type="text" name="class" value={form.class} onChange={onChange} placeholder="CA1, CTR-N, CSU-Đ..." className={inputClass} />
+                </div>
+                <div>
+                  <label className="mb-2 block text-[12px] font-medium uppercase tracking-[0.18em] text-text-faint">
+                    Niên khoá *
+                  </label>
+                  <input type="text" name="school_year" value={form.school_year} onChange={onChange} placeholder="2020-2023" className={inputClass} />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-[12px] font-medium uppercase tracking-[0.18em] text-text-faint">
+                  Địa điểm hiện tại *
+                </label>
+                <input type="text" name="city" value={form.city} onChange={onChange} placeholder="Nhập tên thành phố..." className={inputClass} />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-[12px] font-medium uppercase tracking-[0.18em] text-text-faint">
+                  Một lời nhắn nho nhỏ *
+                </label>
+                <textarea
+                  name="caption"
+                  value={form.caption}
+                  onChange={onChange}
+                  placeholder="Dạo này bạn thế nào?"
+                  rows={4}
+                  className={textareaClass}
+                />
+                <p className="mt-2 text-right text-[11px] text-text-faint">{wordCount} / 30 từ</p>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-[12px] font-medium uppercase tracking-[0.18em] text-text-faint">
+                  Ảnh
+                </label>
+                <input ref={fileRef} type="file" accept="image/*" onChange={onFile} className="hidden" />
+
+                {imagePreview ? (
+                  <div className="relative overflow-hidden rounded-[20px] border border-border">
+                    <img src={imagePreview} alt="Preview" className="h-60 w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImageFile(null)
+                        setImagePreview(null)
+                        if (fileRef.current) fileRef.current.value = ''
+                      }}
+                      className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-base/80 text-text transition-colors hover:bg-base-raised"
+                      aria-label="Xoá ảnh"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    className="flex h-14 w-full items-center justify-center rounded-[20px] border border-dashed border-border bg-input text-sm text-text-soft transition-all hover:border-accent/40 hover:text-text"
+                  >
+                    Chọn ảnh
+                  </button>
+                )}
+              </div>
+
+              {error && (
+                <div className="rounded-xl border border-rose-900/50 bg-rose-950/30 px-4 py-3 text-[13px] text-rose-200">
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="inline-flex min-h-12 items-center justify-center rounded-xl border border-brand bg-brand px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {submitting ? 'Đang lưu...' : 'Lưu thay đổi'}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
+    </section>
   )
 }
