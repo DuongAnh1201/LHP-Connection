@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme {
+  --color-base: #0b1120;
+  --color-surface: #151d2e;
+  --color-card: #1c2a3f;
+  --color-input: #111827;
+  --color-border: #1f2e47;
+  --color-border-light: #2d3f5a;
+  --color-border-hover: #3d5272;
+  --color-text: #f1f5f9;
+  --color-text-dim: #94a3b8;
+  --color-text-faint: #64748b;
+  --color-red: #f87171;
+  --color-red-hover: #ef4444;
+  --color-pill: #1f2e47;
+  --color-pill-border: #2d3f5a;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  background-color: #0b1120;
+  color: #f1f5f9;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2d3f5a;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3d5272;
+}
+
+select option {
+  background-color: #1a2438;
+  color: #f1f5f9;
+}
+
+select.filter-pill {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  text-align: center;
+  text-align-last: center;
+  background-image: none;
+}
