@@ -3,7 +3,7 @@ import type GlobeInstance from 'react-globe.gl'
 import type { GlobeMode, Post } from '../types'
 import { getOptimizedImageUrl } from '../lib/cloudinary'
 
-const LHP_COORDS = { lat: 10.7769, lng: 106.6951 }
+const LHP_COORDS = { lat: 20.4352, lng: 106.1850 }
 const PLACEHOLDER =
   'data:image/svg+xml;base64,' +
   btoa('<svg xmlns="http://www.w3.org/2000/svg" width="420" height="300"><rect width="420" height="300" fill="%23081122"/><text x="210" y="160" text-anchor="middle" fill="%238892a8" font-family="sans-serif" font-size="16">No Image</text></svg>')
@@ -53,13 +53,8 @@ export default function Globe3D({ posts, featuredPost, onFeaturedClick }: Globe3
 
     syncMotionPreference()
 
-    if (typeof mediaQuery.addEventListener === 'function') {
-      mediaQuery.addEventListener('change', syncMotionPreference)
-      return () => mediaQuery.removeEventListener('change', syncMotionPreference)
-    }
-
-    mediaQuery.addListener(syncMotionPreference)
-    return () => mediaQuery.removeListener(syncMotionPreference)
+    mediaQuery.addEventListener('change', syncMotionPreference)
+    return () => mediaQuery.removeEventListener('change', syncMotionPreference)
   }, [])
 
   useEffect(() => {
