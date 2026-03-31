@@ -58,14 +58,18 @@ export default function Header({ currentView, onViewChange }: HeaderProps) {
         <div className="hidden flex-1 md:block"></div>
 
         {/* Center Logo */}
-        <div className="flex shrink-0 flex-col items-center justify-center">
+        <button
+          type="button"
+          onClick={() => onViewChange('list')}
+          className="flex shrink-0 flex-col items-center justify-center"
+        >
           <div className="flex items-center gap-2">
             <img src="/logo-lhp.png" alt="LHP logo" className="h-5 w-5 object-contain" />
             <span className="text-[18px] font-bold tracking-tight text-white">
               The LHP Network
             </span>
           </div>
-        </div>
+        </button>
 
         {/* Right Side Controls */}
         <div className="flex flex-1 items-center justify-end gap-2 sm:gap-3" ref={menuRef}>

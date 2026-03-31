@@ -1,10 +1,11 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { uploadImage } from '../lib/cloudinary'
 import { useAuth } from '../lib/AuthContext'
 
 interface JoinFormProps {
   onSubmitted: () => void
+  onNavigateProfile?: () => void
 }
 
 interface FormState {
@@ -32,8 +33,22 @@ async function geocodeCity(city: string) {
   return null
 }
 
-export default function JoinForm({ onSubmitted }: JoinFormProps) {
+export default function JoinForm({ onSubmitted, onNavigateProfile }: JoinFormProps) {
   const { user, signInWithGoogle } = useAuth()
+  const [hasExistingPost, setHasExistingPost] = useState(false)
+
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('posts')
+      .select('id')
+      .eq('user_id', user.id)
+      .limit(1)
+      .then(({ data }) => {
+        if (data && data.length > 0) setHasExistingPost(true)
+      })
+  }, [user])
+
   const [form, setForm] = useState<FormState>({
     name: '',
     class: '',
@@ -200,6 +215,44 @@ export default function JoinForm({ onSubmitted }: JoinFormProps) {
                 </svg>
                 Đăng nhập bằng Google
               </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (hasExistingPost) {
+    return (
+      <section className={sectionClass}>
+        <div className="mx-auto max-w-[1100px] overflow-hidden rounded-[28px] border border-border bg-panel">
+          <div className="grid items-center gap-6 p-6 sm:p-8 lg:grid-cols-[0.95fr,1.05fr]">
+            <div className="flex min-h-[260px] flex-col items-center justify-between rounded-[24px] border border-accent/20 bg-[radial-gradient(circle_at_top,_rgba(226,174,82,0.2),_transparent_45%),linear-gradient(180deg,_rgba(20,25,39,0.96),_rgba(13,17,27,1))] p-6 text-center">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.28em] text-accent-strong/85">Mạng lưới alumni</p>
+                <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white">Bạn đã có hồ sơ.</h2>
+                <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-text-dim">
+                  Mỗi tài khoản chỉ có thể tạo một hồ sơ trong mạng lưới. Bạn có thể chỉnh sửa thông tin hiện có trong trang hồ sơ của mình.
+                </p>
+              </div>
+              <p className="text-sm text-text-faint">Giữ hồ sơ cập nhật để cộng đồng luôn biết bạn đang ở đâu.</p>
+            </div>
+
+            <div className="flex flex-col items-center justify-center rounded-[24px] border border-border bg-base-raised px-6 py-8 text-center">
+              <div className="mb-4 text-5xl">👤</div>
+              <h3 className="text-[24px] font-semibold tracking-tight text-white">Hồ sơ đã tồn tại</h3>
+              <p className="mt-3 max-w-md text-sm leading-6 text-text-dim">
+                Tài khoản của bạn đã được liên kết với một hồ sơ alumni. Hãy vào trang hồ sơ để cập nhật thông tin.
+              </p>
+              {onNavigateProfile && (
+                <button
+                  type="button"
+                  onClick={onNavigateProfile}
+                  className="mt-6 rounded-xl border border-brand bg-brand px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-brand-hover"
+                >
+                  Xem hồ sơ của tôi
+                </button>
+              )}
             </div>
           </div>
         </div>

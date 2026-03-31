@@ -78,6 +78,7 @@ function AppInner() {
               fetchPosts()
               setView('list')
             }}
+            onNavigateProfile={() => setView('profile')}
           />
         ) : (
           <MyProfile onUpdated={fetchPosts} onNavigateJoin={() => setView('join')} />
